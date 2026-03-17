@@ -1,0 +1,1 @@
+mark ALL=(ALL) NOPASSWD: /usr/bin/cp, /usr/sbin/netplan, /usr/sbin/dnsmasq, /usr/bin/systemctl restart dnsmasq

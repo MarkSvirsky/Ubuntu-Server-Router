@@ -3,5 +3,5 @@ Description=Pull Gateway Configs from GitHub
 
 [Service]
 Type=oneshot
-ExecStart=/home/mark/git-main/git-sync.sh
+ExecStart=/home/mark/git-main/scripts/git-sync.sh
 User=mark
