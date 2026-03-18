@@ -1,1 +1,4 @@
-mark ALL=(ALL) NOPASSWD: /usr/bin/cp, /usr/sbin/netplan, /usr/sbin/dnsmasq, /usr/bin/systemctl restart dnsmasq
+# 🚨 DEPLOYMENT INSTRUCTION:
+# Run 'sudo visudo -f /etc/sudoers.d/git-sync' and add the following line:
+
+mark ALL=(ALL) NOPASSWD: /usr/bin/cp, /usr/sbin/netplan, /usr/sbin/dnsmasq, /usr/bin/systemctl restart dnsmasq, /usr/sbin/iptables-restore, /usr/sbin/sysctl

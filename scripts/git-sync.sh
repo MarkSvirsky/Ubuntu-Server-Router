@@ -1,7 +1,12 @@
 #!/bin/bash
 REPO_PATH="/home/mark/git-main"
+IPTABLES_MARKER="/var/lib/git-sync/iptables.last"
+
+# Ensure marker directory exists
+[ ! -d /var/lib/git-sync ] && sudo mkdir -p /var/lib/git-sync
 
 cd $REPO_PATH
+
 # 1. Check for updates from GitHub
 git fetch origin main
 LOCAL=$(git rev-parse HEAD)
@@ -16,7 +21,6 @@ if [ "$LOCAL" != "$REMOTE" ]; then
         echo "Updating dnsmasq config..."
         sudo cp "$REPO_PATH/configs/dnsmasq/server-gateway.conf" "/etc/dnsmasq.d/"
         
-        # Test config before restarting to prevent house-wide outages
         if sudo dnsmasq --test; then
             sudo systemctl restart dnsmasq
             echo "dnsmasq restarted successfully."
@@ -26,11 +30,21 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     fi
 
     # 3. Check if netplan changed
-    if ! cmp -s "$REPO_PATH/configs/netplan/90-*.yaml" "/etc/netplan/"; then
+    # Using a wildcard handle for the specific yaml filename
+    if ! cmp -s "$REPO_PATH/configs/netplan/"*.yaml /etc/netplan/90-*.yaml; then
         echo "Updating Netplan..."
-        sudo cp "$REPO_PATH/configs/netplan/*.yaml" "/etc/netplan/"
+        sudo cp "$REPO_PATH/configs/netplan/"*.yaml /etc/netplan/
         sudo netplan apply
     fi
+
+    # 4. Check if routing/iptables config changed
+    if ! cmp -s "$REPO_PATH/configs/routing/iptables.sh" "$IPTABLES_MARKER"; then
+        echo "Updating Firewall/Routing..."
+        sudo bash "$REPO_PATH/configs/routing/iptables.sh"
+        # Update marker so we don't re-run every minute
+        sudo cp "$REPO_PATH/configs/routing/iptables.sh" "$IPTABLES_MARKER"
+    fi
+
 else
     echo "No changes found. Staying quiet."
 fi
