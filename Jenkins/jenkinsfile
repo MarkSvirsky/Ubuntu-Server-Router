@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scmGit(
+                    branches: [[name: '*/main']], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'git-token', 
+                        url: 'https://github.com/MarkSvirsky/Ubuntu-Server-Router.git'
+                    ]]
+                )
+            }
+        }
+
+        stage('Validate DNS Config') {
+            steps {
+                // Installs dnsmasq in a tiny container and pipes your config in for testing
+                sh "docker run --rm -i alpine sh -c 'apk add --no-cache dnsmasq && dnsmasq --test' < configs/dnsmasq/server-gateway.conf"
+            }
+        }
+
+        stage('Validate IPTables Syntax') {
+            steps {
+                // Added --privileged so the binary has permission to talk to the netfilter module for syntax testing
+                sh "docker run --rm --privileged -i alpine sh -c 'apk add --no-cache iptables && iptables-restore --test' < configs/routing/iptables.sh"
+            }
+        }
+    }
+    
+    post {
+        success { 
+            echo '✅ Gateway configs are valid! Ready for deployment.' 
+        }
+        failure { 
+            echo '❌ ERROR: Config validation failed. Do NOT merge this commit.' 
+        }
+    }
+}
