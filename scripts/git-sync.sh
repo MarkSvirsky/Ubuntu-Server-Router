@@ -41,7 +41,7 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     if ! cmp -s "$REPO_PATH/configs/routing/iptables.sh" "$IPTABLES_MARKER"; then
         echo "Updating Firewall/Routing..."
         # We use the 'Direct Binary' approach for cleaner sudoers
-	sudo iptables-restore --noflush < "$REPO_PATH/configs/routing/iptables.sh"
+	sudo iptables-restore < "$REPO_PATH/configs/routing/iptables.sh"
         sudo sysctl -w net.ipv4.ip_forward=1
         sudo cp "$REPO_PATH/configs/routing/iptables.sh" "$IPTABLES_MARKER"
     fi
