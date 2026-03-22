@@ -18,7 +18,8 @@ COMMIT
 # 3. Allow Jenkins UI
 -A INPUT -p tcp --dport 8080 -j ACCEPT
 
-# ... the rest of your rules ...
+# Close the filter table (The missing piece!)
+COMMIT
 
 *nat
 :PREROUTING ACCEPT [0:0]
