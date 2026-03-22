@@ -63,16 +63,21 @@ pipeline {
             }
         }
 
-        stage('Promote to Main') {
-            steps {
-                echo '✅ All tests passed! Promoting Testing -> Main...'
-                withCredentials([usernamePassword(credentialsId: 'git-token', passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
-                    sh """
-                        git config user.email "jenkins@junker-gateway"
-                        git config user.name "Jenkins CI"
-                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/MarkSvirsky/Ubuntu-Server-Router.git HEAD:main
-                    """
-                }
+         stage('Promote to Main') {
+    steps {
+        echo '✅ All tests passed! Promoting Testing -> Main...'
+        withCredentials([usernamePassword(credentialsId: 'git-token', passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
+            // Standard config can stay in double quotes
+            sh 'git config user.email "jenkins@junker-gateway"'
+            sh 'git config user.name "Jenkins CI"'
+            
+            // ✅ USE SINGLE QUOTES HERE
+            // This prevents Groovy from touching the variables. 
+            // The Linux Shell handles the expansion securely.
+            sh 'git push https://${GIT_USER}:${GIT_TOKEN}@github.com/MarkSvirsky/Ubuntu-Server-Router.git HEAD:main'
+        }
+    }
+}               }
             }
         }
     }
