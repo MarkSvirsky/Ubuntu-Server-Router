@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout Testing') {
             steps {
-                // We now pull specifically from the 'testing' branch
+                // Jenkins pulls the latest from your 'testing' branch
                 checkout scmGit(
                     branches: [[name: '*/testing']], 
                     userRemoteConfigs: [[
@@ -15,29 +15,77 @@ pipeline {
             }
         }
 
-        stage('Validate DNS Config') {
+        stage('Validate Netplan & DNS') {
             steps {
-                sh "docker run --rm -i alpine sh -c 'apk add --no-cache dnsmasq && dnsmasq --test' < configs/dnsmasq/server-gateway.conf"
+                script {
+                    echo "📦 Preparing Virtual Twin for validation..."
+                    // Start a background container to act as the 'Twin'
+                    sh "docker run -d --name dns-test ubuntu:24.04 sleep 300"
+                    
+                    try {
+                        // Copy configs from the Jenkins workspace into the container
+                        sh "docker cp configs dns-test:/tmp/configs"
+                        
+                        // Run the validation inside the Ubuntu environment
+                        sh """
+                            docker exec -e DEBIAN_FRONTEND=noninteractive dns-test sh -c "
+                                apt-get update && apt-get install -y netplan.io dnsmasq --no-install-recommends &&
+                                mkdir -p /etc/netplan &&
+                                cp /tmp/configs/netplan/*.yaml /etc/netplan/ &&
+                                echo 'Checking Netplan Syntax...' &&
+                                netplan generate && 
+                                echo 'Checking Dnsmasq Syntax...' &&
+                                dnsmasq --test --conf-file=/tmp/configs/dnsmasq/server-gateway.conf
+                            "
+                        """
+                        echo "✅ Netplan and DNS Validation Passed."
+                    } finally {
+                        // Always clean up the container
+                        sh "docker rm -f dns-test"
+                    }
+                }
             }
         }
 
-        stage('Validate IPTables Syntax') {
+        stage('IPTables Lockout Test') {
             steps {
-                sh "docker run --rm --privileged -i alpine sh -c 'apk add --no-cache iptables && iptables-restore --test' < configs/routing/iptables.sh"
+                script {
+                    echo "🛡️ Simulating Firewall & Testing SSH Accessibility..."
+                    // Start a privileged container for real iptables testing
+                    sh "docker run --privileged -d --name net-check ubuntu:24.04 sleep 300"
+                    
+                    try {
+                        sh "docker cp configs net-check:/tmp/configs"
+                        
+                        sh """
+                            docker exec -e DEBIAN_FRONTEND=noninteractive net-check sh -c "
+                                apt-get update && apt-get install -y iptables --no-install-recommends &&
+                                iptables-restore < /tmp/configs/routing/iptables.sh &&
+                                echo 'Firewall loaded. Checking SSH port...'
+                            "
+                        """
+                        
+                        // This grep looks for your EXPLICIT SSH rule. 
+                        // If it's missing, the build fails to prevent a lockout.
+                        if (sh(script: "docker exec net-check iptables -L INPUT -n | grep -q 'dpt:22.*ACCEPT'", returnStatus: true) == 0) {
+                            echo '✅ SSH Port 22 is confirmed open.'
+                        } else {
+                            error("❌ CRITICAL: This config would LOCK YOU OUT of SSH. Build failed.")
+                        }
+                    } finally {
+                        sh "docker rm -f net-check"
+                    }
+                }
             }
         }
 
         stage('Promote to Main') {
             steps {
-                echo '✅ Validation Passed! Merging Testing -> Main...'
-                // Use the git-token to push the current state to the main branch
+                echo '✅ All tests passed! Promoting Testing -> Main...'
                 withCredentials([usernamePassword(credentialsId: 'git-token', passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
                     sh """
-                        # Configure git identity for the push
                         git config user.email "jenkins@junker-gateway"
                         git config user.name "Jenkins CI"
-                        
-                        # Push the current commit (HEAD) to the remote 'main' branch
                         git push https://${GIT_USER}:${GIT_TOKEN}@github.com/MarkSvirsky/Ubuntu-Server-Router.git HEAD:main
                     """
                 }
@@ -46,11 +94,11 @@ pipeline {
     }
     
     post {
-        success { 
-            echo '🎉 SUCCESS: Testing branch validated and promoted to Main.' 
+        always {
+            echo "Pipeline Finished. Status: ${currentBuild.result}"
         }
-        failure { 
-            echo '❌ FAILURE: Testing branch has errors. Main branch remains safe.' 
+        failure {
+            echo "🛑 BUILD FAILED: One of your configs is dangerous or broken."
         }
     }
 }
