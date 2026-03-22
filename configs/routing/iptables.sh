@@ -5,20 +5,20 @@
 COMMIT
 
 *filter
-# 1. Keep your current session alive (CRITICAL)
--A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-# 2. Allow SSH (So the Jenkins 'Lockout Test' passes)
--A INPUT -p tcp --dport 22 -j ACCEPT
-
-# 3. Allow Jenkins UI (So you don't lose the dashboard)
--A INPUT -p tcp --dport 8080 -j ACCEPT
 :INPUT ACCEPT [0:0]
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
--A FORWARD -i enp1s0 -o enp5s0 -j ACCEPT
--A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-COMMIT
+
+# 1. Allow established connections (Crucial for stability)
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# 2. THE RULE JENKINS IS LOOKING FOR
+-A INPUT -p tcp --dport 22 -j ACCEPT
+
+# 3. Allow Jenkins UI
+-A INPUT -p tcp --dport 8080 -j ACCEPT
+
+# ... the rest of your rules ...
 
 *nat
 :PREROUTING ACCEPT [0:0]
