@@ -8,17 +8,9 @@ COMMIT
 :INPUT ACCEPT [0:0]
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
-
-# 1. Allow established connections (Crucial for stability)
 -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-# 2. THE RULE JENKINS IS LOOKING FOR
 -A INPUT -p tcp --dport 22 -j ACCEPT
-
-# 3. Allow Jenkins UI
 -A INPUT -p tcp --dport 8080 -j ACCEPT
-
-# Close the filter table (The missing piece!)
 COMMIT
 
 *nat
