@@ -9,7 +9,6 @@ COMMIT
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
 -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
--A INPUT -p tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp --dport 8080 -j ACCEPT
 COMMIT
 
