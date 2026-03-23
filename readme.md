@@ -5,7 +5,7 @@ DNS and DHCP settings for the server
 
 ## netplan .yaml file
 Tells the server exactly how each NIC is configured
-Ther IP, DG, DNS
+Their IP, DG, DNS
 
 ## routing /configs/routing
 Firewall and packet forwarding
@@ -18,7 +18,7 @@ Updates the files from the git repo into the server's etc files
 The visudo config allows the systemd task to run git-sync.sh as "mark" without needing a human to type the password
 
 ## systemd service
-updates the repo files into the server's etc files
+runs git-sync.sh when needed
 
 ## Jenkins 
 Contains the jenkinsfile and the commands needed in order to allow the Jenkin container to perform the tests in the jenkinsfile
