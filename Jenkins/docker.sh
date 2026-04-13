@@ -12,5 +12,4 @@ docker run -d \
 #gives the docker container running jenkins the permissions it needs in order to run the build
 
 sudo usermod -aG docker jenkins
-sudo chmod 666 /var/run/docker.sock
 docker restart jenkins-master
