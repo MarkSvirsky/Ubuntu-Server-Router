@@ -1,3 +1,19 @@
+# 🌐 Ubuntu Server Home Router & Gateway
+
+## Project Overview
+This repository contains the configuration files and automation scripts used to transform a standard Ubuntu Linux server into a fully functional, enterprise-grade home router and gateway. 
+
+Instead of relying on off-the-shelf consumer routers, this project manages my entire home network infrastructure. It utilizes a **GitOps** approach: network changes are pushed to this repository, validated by a Jenkins CI/CD pipeline inside isolated Docker containers, and then automatically pulled and applied by the router via systemd services.
+
+**Core Technologies:**
+* **Netplan:** Interface configuration and routing.
+* **Dnsmasq:** Local DNS resolution and DHCP server.
+* **IPTables:** Stateful firewall and NAT (Masquerading) to share the WAN connection.
+* **Jenkins & Docker:** Automated testing of network configs before deployment.
+* **Bash & Systemd:** Automated synchronization from GitHub to production (`/etc/`).
+
+---
+
 # Files and their purpose
 
 ## dnsmasq/server-gateway.conf
